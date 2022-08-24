@@ -177,6 +177,9 @@ void showNewData() {
         if ( receivedChar == '6' ) {
           page = 6;
         }
+        if ( receivedChar == '7' ) {
+          page = 7;
+        }
         
         newData = false;
     }
@@ -335,6 +338,23 @@ void processData() {
         display.setCursor(0,20);
         display.println(96);
         display.display();
+      }
+
+      if ( page == 7 ) {
+        display.clearDisplay(); 
+
+        float angle  = (PI/1023) * tps;                        // map analog in 0,1023, to 0.00,3.14
+        int length = 50;                                       // line height Ratio of Screen 0-64
+        const byte x0 = 64;                                    // x0 Line Start 0-128
+        const byte y0 = 63;                                    // y0 Line Start 0-64
+
+        display.drawCircle(x0, y0, 55, WHITE);
+
+        byte x1 = x0 - length * cos (angle);
+        byte y1 = y0 - length * sin (angle);
+
+        display.drawLine(x0, y0, x1, y1, WHITE); // write to screen
+        display.display();  
       }
 
 //      File dataFile = SD.open(csvFile, FILE_WRITE);
