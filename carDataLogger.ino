@@ -56,7 +56,7 @@ int FuelPressureMinAddress = 40;
 int isrCounter = 0;
 volatile byte state = LOW;
 
-int page = 3;
+int page = 7;
 
 void setup() {
 
@@ -342,11 +342,14 @@ void processData() {
 
       if ( page == 7 ) {
         display.clearDisplay(); 
+        // Credit for the pointer from this page
+        // https://forum.arduino.cc/t/cos-sin-analog-needle-gauge-line-code-display-using-adafruit_ssd1306-128x64/529669
 
         float angle  = (PI/1023) * tps;                        // map analog in 0,1023, to 0.00,3.14
         int length = 50;                                       // line height Ratio of Screen 0-64
         const byte x0 = 64;                                    // x0 Line Start 0-128
         const byte y0 = 63;                                    // y0 Line Start 0-64
+                                 // y0 Line Start 0-64
 
         display.drawCircle(x0, y0, 55, WHITE);
 
@@ -354,6 +357,7 @@ void processData() {
         byte y1 = y0 - length * sin (angle);
 
         display.drawLine(x0, y0, x1, y1, WHITE); // write to screen
+
         display.display();  
       }
 
