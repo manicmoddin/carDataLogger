@@ -56,7 +56,7 @@ int FuelPressureMinAddress = 40;
 int isrCounter = 0;
 volatile byte state = LOW;
 
-
+int page = 3;
 
 void setup() {
 
@@ -154,6 +154,30 @@ void showNewData() {
         if ( receivedChar == 'x' ) {
           calibration = false;
         }
+        
+        if ( receivedChar == '0' ) {
+          page = 0;
+        }
+
+        if ( receivedChar == '1' ) {
+          page = 1;
+        }
+        if ( receivedChar == '2' ) {
+          page = 2;
+        }
+        if ( receivedChar == '3' ) {
+          page = 3;
+        }
+        if ( receivedChar == '4' ) {
+          page = 4;
+        }
+        if ( receivedChar == '5' ) {
+          page = 5;
+        }
+        if ( receivedChar == '6' ) {
+          page = 6;
+        }
+        
         newData = false;
     }
 }
@@ -187,6 +211,8 @@ void processData() {
         calibration = false;
     }
     else {
+
+      
       String dataString = "";
       
       int tps = analogRead(TPSPin);
@@ -211,19 +237,105 @@ void processData() {
       dataString += isrCounter;
       //Serial.println(dataString);
 
-      //Display the full output, going to page this...
+      //display the pages
+      if ( page == 0 ){
+        //Display the full output,
+        display.clearDisplay();
+        display.setTextColor(SSD1306_WHITE);
+        display.setTextSize(1);
+        display.setCursor(0,0);
+        display.print("TPS:  "); display.println(tpsPercent);
+        display.print("Fuel: "); display.println(fuelPressurePSi);
+        display.print("IAT:  "); display.println(iatPercent);
+        display.print("O2:   "); display.println(lambda);
+        display.print("MAP:  "); display.println(mapV);
+        display.print("CLT:  "); display.println("0");
+        display.display();
+      }
 
-      display.clearDisplay();
-      display.setTextColor(SSD1306_WHITE);
-      display.setTextSize(1);
-      display.setCursor(0,0);
-      display.print("TPS:  "); display.println(tpsPercent);
-      display.print("Fuel: "); display.println(fuelPressurePSi);
-      display.print("IAT:  "); display.println(iatPercent);
-      display.print("O2:   "); display.println(lambda);
-      display.print("MAP:  "); display.println(mapV);
-      display.print("CLT:  "); display.println("0");
-      display.display();
+      if ( page == 1 ) {
+        // its the TPS on this one
+        display.clearDisplay();
+        display.setTextColor(SSD1306_WHITE);
+        display.setTextSize(2);
+        display.setCursor(0,0);
+        display.println("TPS");
+        display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
+        display.setTextSize(4);
+        display.setCursor(0,20);
+        display.println(tpsPercent);
+        display.display();
+      }
+
+      if ( page == 2 ) {
+        // its the Fuel Pressure on this one
+        display.clearDisplay();
+        display.setTextColor(SSD1306_WHITE);
+        display.setTextSize(2);
+        display.setCursor(0,0);
+        display.println("Fuel Pres");
+        display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
+        display.setTextSize(4);
+        display.setCursor(0,20);
+        display.println(fuelPressurePSi);
+        display.display();
+      }
+
+      if ( page == 3 ) {
+        // its the IAT on this one
+        display.clearDisplay();
+        display.setTextColor(SSD1306_WHITE);
+        display.setTextSize(2);
+        display.setCursor(0,0);
+        display.println("Air Temp");
+        display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
+        display.setTextSize(4);
+        display.setCursor(0,20);
+        display.println(iatPercent);
+        display.display();
+      }
+
+      if ( page == 4 ) {
+        // its the Lambda on this one
+        display.clearDisplay();
+        display.setTextColor(SSD1306_WHITE);
+        display.setTextSize(2);
+        display.setCursor(0,0);
+        display.println("Lambda");
+        display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
+        display.setTextSize(4);
+        display.setCursor(0,20);
+        display.println(lambda);
+        display.display();
+      }
+
+      if ( page == 5 ) {
+        // its the Map on this one
+        display.clearDisplay();
+        display.setTextColor(SSD1306_WHITE);
+        display.setTextSize(2);
+        display.setCursor(0,0);
+        display.println("Map");
+        display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
+        display.setTextSize(4);
+        display.setCursor(0,20);
+        display.println(mapV);
+        display.display();
+      }
+
+      if ( page == 6 ) {
+        // its the Coolant Temp on this one
+        display.clearDisplay();
+        display.setTextColor(SSD1306_WHITE);
+        display.setTextSize(2);
+        display.setCursor(0,0);
+        display.println("Coolant");
+        display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
+        display.setTextSize(4);
+        display.setCursor(0,20);
+        display.println(96);
+        display.display();
+      }
 
 //      File dataFile = SD.open(csvFile, FILE_WRITE);
 //      if (dataFile) {
