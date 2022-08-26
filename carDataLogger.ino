@@ -51,12 +51,16 @@ int TPSMinAddress = 20;
 int FuelPressureMaxAddress = 30;
 int FuelPressureMinAddress = 40;
 
+const bool narrowbandLambda = true;
+//const int narrowbandThreshold = 100; //mV
+const int narrowbandThreshold = 512; //mV
+
 //const int chipSelect = 4;
 
 int isrCounter = 0;
 volatile byte state = LOW;
 
-int page = 7;
+int page = 4;
 
 void setup() {
 
@@ -185,6 +189,25 @@ void showNewData() {
     }
 }
 
+void analog_gauge(int sensor) {
+    // Credit for the pointer from this page
+    // https://forum.arduino.cc/t/cos-sin-analog-needle-gauge-line-code-display-using-adafruit_ssd1306-128x64/529669
+    
+    float angle  = (PI/1023) * sensor;                        // map analog in 0,1023, to 0.00,3.14
+    int length = 40;                                       // line height Ratio of Screen 0-64
+    const byte x0 = 64;                                    // x0 Line Start 0-128
+    const byte y0 = 63;                                    // y0 Line Start 0-64
+                             // y0 Line Start 0-64
+    
+    display.drawCircle(x0, y0, 45, WHITE);
+    
+    byte x1 = x0 - length * cos (angle);
+    byte y1 = y0 - length * sin (angle);
+    
+    display.drawLine(x0, y0, x1, y1, WHITE); // write to screen
+     
+}
+
 void processData() {
     if (calibration == true) {
         display.clearDisplay();
@@ -307,7 +330,20 @@ void processData() {
         display.println("Lambda");
         display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
         display.setTextSize(4);
-        display.setCursor(0,20);
+        display.setCursor(0,45);
+        display.drawRect(2, 20, 124, 20, SSD1306_WHITE);
+        display.drawFastVLine(64, 20, 20, SSD1306_WHITE);
+        // rich / lean on narrowband
+        if (narrowbandLambda == true) {
+          if ( lambda < narrowbandThreshold ) {
+            //lean
+            display.fillRect(4, 22, 60, 16, SSD1306_WHITE);
+          }
+          else {
+            //rich
+            display.fillRect(64, 22, 60, 16, SSD1306_WHITE);
+          }
+        }
         display.println(lambda);
         display.display();
       }
@@ -341,24 +377,14 @@ void processData() {
       }
 
       if ( page == 7 ) {
-        display.clearDisplay(); 
-        // Credit for the pointer from this page
-        // https://forum.arduino.cc/t/cos-sin-analog-needle-gauge-line-code-display-using-adafruit_ssd1306-128x64/529669
-
-        float angle  = (PI/1023) * tps;                        // map analog in 0,1023, to 0.00,3.14
-        int length = 50;                                       // line height Ratio of Screen 0-64
-        const byte x0 = 64;                                    // x0 Line Start 0-128
-        const byte y0 = 63;                                    // y0 Line Start 0-64
-                                 // y0 Line Start 0-64
-
-        display.drawCircle(x0, y0, 55, WHITE);
-
-        byte x1 = x0 - length * cos (angle);
-        byte y1 = y0 - length * sin (angle);
-
-        display.drawLine(x0, y0, x1, y1, WHITE); // write to screen
-
-        display.display();  
+        display.clearDisplay();
+        display.setTextColor(SSD1306_WHITE);
+        display.setTextSize(2);
+        display.setCursor(0,0);
+        display.println("TPS");
+        display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
+        analog_gauge(tps);
+        display.display();
       }
 
 //      File dataFile = SD.open(csvFile, FILE_WRITE);
