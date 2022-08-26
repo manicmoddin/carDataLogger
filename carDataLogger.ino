@@ -189,8 +189,8 @@ void showNewData() {
     }
 }
 
-void analog_gauge(int sensor) {
-    // Credit for the pointer from this page
+void analog_gauge(int sensor, int type) {
+    // Credit for the basics of the pointer from this page
     // https://forum.arduino.cc/t/cos-sin-analog-needle-gauge-line-code-display-using-adafruit_ssd1306-128x64/529669
     
     float angle  = (PI/1023) * sensor;                        // map analog in 0,1023, to 0.00,3.14
@@ -205,6 +205,7 @@ void analog_gauge(int sensor) {
     byte y1 = y0 - length * sin (angle);
     
     display.drawLine(x0, y0, x1, y1, WHITE); // write to screen
+    //display.setCursor
      
 }
 
@@ -245,6 +246,7 @@ void processData() {
       int tpsPercent = map(tps,TPSMin, TPSMax, 0, 100);
       int fuelPressure = analogRead(fuelPressureInput);
       int fuelPressurePSi = map(fuelPressure, 0, 1023, 0, 140);
+      float fuelPressureBar = fuelPressurePSi / 14.504;
       int iat = analogRead(IATPin);
       int iatPercent = map(iat, 0, 1023, 0, 100);
       int lambda = analogRead(lambdaInput);
@@ -289,7 +291,8 @@ void processData() {
         display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
         display.setTextSize(4);
         display.setCursor(0,20);
-        display.println(tpsPercent);
+        display.print(tpsPercent);
+        display.print("%");
         display.display();
       }
 
@@ -304,6 +307,8 @@ void processData() {
         display.setTextSize(4);
         display.setCursor(0,20);
         display.println(fuelPressurePSi);
+        display.setTextSize(2);
+        display.println(fuelPressureBar);
         display.display();
       }
 
@@ -317,7 +322,11 @@ void processData() {
         display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
         display.setTextSize(4);
         display.setCursor(0,20);
-        display.println(iatPercent);
+        display.print(iatPercent);
+        display.setTextSize(2);
+        display.write(0xF7);  // Degrees Symbol
+        display.setTextSize(4);
+        display.println("C");
         display.display();
       }
 
@@ -329,10 +338,8 @@ void processData() {
         display.setCursor(0,0);
         display.println("Lambda");
         display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
-        display.setTextSize(4);
-        display.setCursor(0,45);
-        display.drawRect(2, 20, 124, 20, SSD1306_WHITE);
-        display.drawFastVLine(64, 20, 20, SSD1306_WHITE);
+        display.drawRect(2, 20, 124, 20, SSD1306_WHITE);  // Outer Box
+        display.drawFastVLine(64, 20, 20, SSD1306_WHITE); // Halfway Marker
         // rich / lean on narrowband
         if (narrowbandLambda == true) {
           if ( lambda < narrowbandThreshold ) {
@@ -344,7 +351,6 @@ void processData() {
             display.fillRect(64, 22, 60, 16, SSD1306_WHITE);
           }
         }
-        display.println(lambda);
         display.display();
       }
 
@@ -372,7 +378,11 @@ void processData() {
         display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
         display.setTextSize(4);
         display.setCursor(0,20);
-        display.println(96);
+        display.print(96);
+        display.setTextSize(2);
+        display.write(0xF7);  // Degrees Symbol
+        display.setTextSize(4);
+        display.println("C");
         display.display();
       }
 
@@ -383,7 +393,7 @@ void processData() {
         display.setCursor(0,0);
         display.println("TPS");
         display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
-        analog_gauge(tps);
+        analog_gauge(tps, 0);
         display.display();
       }
 
