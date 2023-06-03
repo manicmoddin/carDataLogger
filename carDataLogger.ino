@@ -3,21 +3,23 @@
 //#include <SD.h>
 
 #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <Adafruit_ST7735.h> // Hardware-specific library for ST7735
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define TFT_CS         4
+#define TFT_RST       -1 // Or set to -1 and connect to Arduino RESET pin
+#define TFT_DC         5
 
-// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
-// The pins for I2C are defined by the Wire-library. 
-// On an arduino UNO:       A4(SDA), A5(SCL)
-// On an arduino MEGA 2560: 20(SDA), 21(SCL)
-// On an arduino LEONARDO:   2(SDA),  3(SCL), ...
-#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
-#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+// Color definitions
+#define BLACK    0x0000
+#define BLUE     0x001F
+#define RED      0xF800
+#define GREEN    0x07E0
+#define CYAN     0x07FF
+#define MAGENTA  0xF81F
+#define YELLOW   0xFFE0 
+#define WHITE    0xFFFF
 
-
+Adafruit_ST7735 display = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
 char receivedChar;
 boolean newData = false;
@@ -61,33 +63,31 @@ int isrCounter = 0;
 volatile byte state = LOW;
 
 int page = 4;
+int oldPage = 0;
 
 void setup() {
 
-    pinMode(led, OUTPUT);
-    pinMode(button, INPUT);
-    attachInterrupt(digitalPinToInterrupt(button), my_interrupt_handler, FALLING);
+//    pinMode(led, OUTPUT);
+//    pinMode(button, INPUT);
+//    attachInterrupt(digitalPinToInterrupt(button), my_interrupt_handler, FALLING);
 
-    // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-    if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-      Serial.println(F("SSD1306 allocation failed"));
-      for(;;); // Don't proceed, loop forever
-    }
+    // Use this initializer if using a 1.8" TFT screen:
+    display.initR(INITR_REDTAB);      // Init ST7735S chip, black tab
 
     // Show initial display buffer contents on the screen --
     // the library initializes this with an Adafruit splash screen.
-    display.display();
+    //display.display();
     delay(2000); // Pause for 2 seconds
 
     // Clear the buffer
-    display.clearDisplay();
+    display.fillScreen(BLACK);
 
     // Draw a single pixel in white
-    display.drawPixel(10, 10, SSD1306_WHITE);
+    display.drawPixel(10, 10, WHITE);
 
     // Show the display buffer on the screen. You MUST call display() after
     // drawing commands to make them visible on screen!
-    display.display();
+    //display.display();
     delay(2000);
   
     Serial.begin(115200);
@@ -196,7 +196,7 @@ void analog_gauge(int sensor, int type) {
     float angle  = (PI/1023) * sensor;                        // map analog in 0,1023, to 0.00,3.14
     int length = 40;                                       // line height Ratio of Screen 0-64
     const byte x0 = 64;                                    // x0 Line Start 0-128
-    const byte y0 = 63;                                    // y0 Line Start 0-64
+    const byte y0 = 127;                                    // y0 Line Start 0-64
                              // y0 Line Start 0-64
     
     display.drawCircle(x0, y0, 45, WHITE);
@@ -211,27 +211,27 @@ void analog_gauge(int sensor, int type) {
 
 void processData() {
     if (calibration == true) {
-        display.clearDisplay();
-        display.setTextColor(SSD1306_WHITE);
+        display.fillScreen(BLACK);
+        display.setTextColor(WHITE);
         display.setCursor(0,0);
         display.setTextSize(2); // Draw 2X-scale text
         display.println("TPS Cali");
         display.println();
         display.println("Full Accel");
         //display.println("Reading will be taken in 2 seconds");
-        display.display();
+        //display.display();
         delay(2000);
         TPSMax = analogRead(TPSPin);
-        display.clearDisplay();
+        display.fillScreen(BLACK);
         display.setCursor(0,0);
         display.println("TPS Cali");
         display.println();
         display.println("No Accel");
         //display.println("Reading will be taken in 2 seconds");
-        display.display();
+        //display.display();
         delay(2000);
-        display.clearDisplay();
-        display.display();
+        display.fillScreen(BLACK);
+        //display.display();
         TPSMin = analogRead(TPSPin);
         EEPROM.update(TPSMaxAddress, TPSMax/4);
         EEPROM.update(TPSMinAddress, TPSMin/4);
@@ -268,9 +268,14 @@ void processData() {
       //display the pages
       if ( page == 0 ){
         //Display the full output,
-        display.clearDisplay();
-        display.setTextColor(SSD1306_WHITE);
-        display.setTextSize(1);
+        if (oldPage != page) {
+          display.fillScreen(BLACK);
+          display.setTextColor(WHITE, BLACK);
+          display.setTextSize(1);
+          oldPage = page;
+          Serial.print("page : ");
+          Serial.println(page);
+        }
         display.setCursor(0,0);
         display.print("TPS:  "); display.println(tpsPercent);
         display.print("Fuel: "); display.println(fuelPressurePSi);
@@ -278,48 +283,63 @@ void processData() {
         display.print("O2:   "); display.println(lambda);
         display.print("MAP:  "); display.println(mapV);
         display.print("CLT:  "); display.println("0");
-        display.display();
+        //display.display();
       }
 
       if ( page == 1 ) {
         // its the TPS on this one
-        display.clearDisplay();
-        display.setTextColor(SSD1306_WHITE);
-        display.setTextSize(2);
-        display.setCursor(0,0);
-        display.println("TPS");
-        display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
+        if (oldPage != page) {
+          display.fillScreen(BLACK);
+          display.setTextColor(WHITE, BLACK);
+          display.setTextSize(2);
+          display.setCursor(0,0);
+          display.println("TPS");
+          display.drawFastHLine(0, 15, 128, WHITE);
+          oldPage = page;
+          Serial.print("page : ");
+          Serial.println(page);
+        }
         display.setTextSize(4);
         display.setCursor(0,20);
         display.print(tpsPercent);
         display.print("%");
-        display.display();
+        //display.display();
       }
 
       if ( page == 2 ) {
         // its the Fuel Pressure on this one
-        display.clearDisplay();
-        display.setTextColor(SSD1306_WHITE);
-        display.setTextSize(2);
-        display.setCursor(0,0);
-        display.println("Fuel Pres");
-        display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
+        if (oldPage != page) {
+          display.fillScreen(BLACK);
+          display.setTextColor(WHITE, BLACK);
+          display.setTextSize(2);
+          display.setCursor(0,0);
+          display.println("Fuel Pres");
+          display.drawFastHLine(0, 15, 128, WHITE);
+          oldPage = page;
+          Serial.print("page : ");
+          Serial.println(page);
+        }
         display.setTextSize(4);
         display.setCursor(0,20);
         display.println(fuelPressurePSi);
         display.setTextSize(2);
         display.println(fuelPressureBar);
-        display.display();
+        //display.display();
       }
 
       if ( page == 3 ) {
         // its the IAT on this one
-        display.clearDisplay();
-        display.setTextColor(SSD1306_WHITE);
-        display.setTextSize(2);
-        display.setCursor(0,0);
-        display.println("Air Temp");
-        display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
+        if (oldPage != page) {
+          display.fillScreen(BLACK);
+          display.setTextColor(WHITE, BLACK);
+          display.setTextSize(2);
+          display.setCursor(0,0);
+          display.println("Air Temp");
+          display.drawFastHLine(0, 15, 128, WHITE);
+          oldPage = page;
+          Serial.print("page : ");
+          Serial.println(page);
+        }
         display.setTextSize(4);
         display.setCursor(0,20);
         display.print(iatPercent);
@@ -327,55 +347,73 @@ void processData() {
         display.write(0xF7);  // Degrees Symbol
         display.setTextSize(4);
         display.println("C");
-        display.display();
+        //display.display();
       }
 
       if ( page == 4 ) {
         // its the Lambda on this one
-        display.clearDisplay();
-        display.setTextColor(SSD1306_WHITE);
-        display.setTextSize(2);
-        display.setCursor(0,0);
-        display.println("Lambda");
-        display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
-        display.drawRect(2, 20, 124, 20, SSD1306_WHITE);  // Outer Box
-        display.drawFastVLine(64, 20, 20, SSD1306_WHITE); // Halfway Marker
+        if (oldPage != page) {
+          display.fillScreen(BLACK);
+          display.setTextColor(WHITE, BLACK);
+          display.setTextSize(2);
+          display.setCursor(0,0);
+          display.println("Lambda");
+          display.drawFastHLine(0, 15, 128, WHITE);
+          display.drawRect(2, 20, 124, 20, WHITE);  // Outer Box
+          display.drawFastVLine(64, 20, 20, WHITE); // Halfway Marker
+          oldPage = page;
+          Serial.print("page : ");
+          Serial.println(page);
+        }
+        
         // rich / lean on narrowband
         if (narrowbandLambda == true) {
           if ( lambda < narrowbandThreshold ) {
             //lean
-            display.fillRect(4, 22, 60, 16, SSD1306_WHITE);
+            display.fillRect(64, 22, 60, 16, BLACK);
+            display.fillRect(4, 22, 60, 16, WHITE);
           }
           else {
             //rich
-            display.fillRect(64, 22, 60, 16, SSD1306_WHITE);
+            display.fillRect(4, 22, 60, 16, BLACK);
+            display.fillRect(64, 22, 60, 16, WHITE);
           }
         }
-        display.display();
+        //display.display();
       }
 
       if ( page == 5 ) {
         // its the Map on this one
-        display.clearDisplay();
-        display.setTextColor(SSD1306_WHITE);
-        display.setTextSize(2);
-        display.setCursor(0,0);
-        display.println("Map");
-        display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
+        if (oldPage != page) {
+          display.fillScreen(BLACK);
+          display.setTextColor(WHITE, BLACK);
+          display.setTextSize(2);
+          display.setCursor(0,0);
+          display.println("Map");
+          display.drawFastHLine(0, 15, 128, WHITE);
+          oldPage = page;
+          Serial.print("page : ");
+          Serial.println(page);
+        }
         display.setTextSize(4);
         display.setCursor(0,20);
         display.println(mapV);
-        display.display();
+        //display.display();
       }
 
       if ( page == 6 ) {
         // its the Coolant Temp on this one
-        display.clearDisplay();
-        display.setTextColor(SSD1306_WHITE);
-        display.setTextSize(2);
-        display.setCursor(0,0);
-        display.println("Coolant");
-        display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
+        if (oldPage != page) {
+          display.fillScreen(BLACK);
+          display.setTextColor(WHITE, BLACK);
+          display.setTextSize(2);
+          display.setCursor(0,0);
+          display.println("Coolant");
+          display.drawFastHLine(0, 15, 128, WHITE);
+          oldPage = page;
+          Serial.print("page : ");
+          Serial.println(page);
+        }
         display.setTextSize(4);
         display.setCursor(0,20);
         display.print(96);
@@ -383,18 +421,23 @@ void processData() {
         display.write(0xF7);  // Degrees Symbol
         display.setTextSize(4);
         display.println("C");
-        display.display();
+        //display.display();
       }
 
       if ( page == 7 ) {
-        display.clearDisplay();
-        display.setTextColor(SSD1306_WHITE);
-        display.setTextSize(2);
-        display.setCursor(0,0);
-        display.println("TPS");
-        display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
+        if (oldPage != page) {
+          display.fillScreen(BLACK);
+          display.setTextColor(WHITE, BLACK);
+          display.setTextSize(2);
+          display.setCursor(0,0);
+          display.println("TPS");
+          display.drawFastHLine(0, 15, 128, WHITE);
+          oldPage = page;
+          Serial.print("page : ");
+          Serial.println(page);
+        }
         analog_gauge(tps, 0);
-        display.display();
+        //display.display();
       }
 
 //      File dataFile = SD.open(csvFile, FILE_WRITE);
