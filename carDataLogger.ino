@@ -1,13 +1,13 @@
 #include <EEPROM.h>
-//#include <SPI.h>
-//#include <SD.h>
+#include <SPI.h>
+#include <SD.h>
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h> // Hardware-specific library for ST7735
 
-#define TFT_CS         4
-#define TFT_RST       -1 // Or set to -1 and connect to Arduino RESET pin
-#define TFT_DC         5
+#define TFT_CS         10
+#define TFT_RST       3 // Or set to -1 and connect to Arduino RESET pin
+#define TFT_DC         4
 
 // Color definitions
 #define BLACK    0x0000
@@ -25,8 +25,8 @@ char receivedChar;
 boolean newData = false;
 boolean calibration = false;
 boolean calTPS = false;
-//int filename = 0;
-//char csvFile[8];
+int filename = 0;
+char csvFile[8];
 
 ///////////////
 // Pin Setup //
@@ -54,10 +54,10 @@ int FuelPressureMaxAddress = 30;
 int FuelPressureMinAddress = 40;
 
 const bool narrowbandLambda = true;
-//const int narrowbandThreshold = 100; //mV
-const int narrowbandThreshold = 512; //mV
+const int narrowbandThreshold = 100; //mV
+//const int narrowbandThreshold = 512; //mV
 
-//const int chipSelect = 4;
+const int chipSelect = 2;
 
 int isrCounter = 0;
 volatile byte state = LOW;
@@ -72,7 +72,8 @@ void setup() {
 //    attachInterrupt(digitalPinToInterrupt(button), my_interrupt_handler, FALLING);
 
     // Use this initializer if using a 1.8" TFT screen:
-    display.initR(INITR_REDTAB);      // Init ST7735S chip, black tab
+    display.initR(INITR_BLACKTAB);      // Init ST7735S chip, black tab
+    display.setRotation(1);
 
     // Show initial display buffer contents on the screen --
     // the library initializes this with an Adafruit splash screen.
@@ -103,35 +104,35 @@ void setup() {
     Serial.print("TPS Min : ");
     Serial.println(TPSMin);
 
-//    // see if the card is present and can be initialized:
-//    if (!SD.begin(chipSelect)) {
-//      Serial.println("Card failed, or not present");
-//      // don't do anything more:
-//      while (1);
-//    }
-//    Serial.println("card initialized.");
-//
-//    for(int x=0; x<1000; x++){
-//      // Check to see if the file exists: 
-//      char filename[8];
-//      sprintf(filename, "%03d.CSV", x);
-//      Serial.println(filename);
-//      if (SD.exists(filename)) {
-//        Serial.println(filename);
-//      }
-//      else {
-//        sprintf(csvFile, "%03d.CSV", x);
-//        break;
-//      }
-//    }
-//    
-//    
-//    File dataFile = SD.open(csvFile, FILE_WRITE);
-//    if (dataFile) {
-//      dataFile.println("TPS,FuelP,IAT,Lambda,MAP,Alert Level");
-//      dataFile.close();
-//    }
-//
+    // see if the card is present and can be initialized:
+    if (!SD.begin(chipSelect)) {
+      Serial.println("Card failed, or not present");
+      // don't do anything more:
+      while (1);
+    }
+    Serial.println("card initialized.");
+
+    for(int x=0; x<1000; x++){
+      // Check to see if the file exists: 
+      char filename[8];
+      sprintf(filename, "%03d.CSV", x);
+      Serial.println(filename);
+      if (SD.exists(filename)) {
+        Serial.println(filename);
+      }
+      else {
+        sprintf(csvFile, "%03d.CSV", x);
+        break;
+      }
+    }
+    
+    
+    File dataFile = SD.open(csvFile, FILE_WRITE);
+    if (dataFile) {
+      dataFile.println("TPS,FuelP,IAT,Lambda,MAP,Alert Level");
+      dataFile.close();
+    }
+
     delay(3000);
 }
 
@@ -374,7 +375,7 @@ void processData() {
             display.fillRect(4, 22, 60, 16, WHITE);
           }
           else {
-            //rich
+            //rich2
             display.fillRect(4, 22, 60, 16, BLACK);
             display.fillRect(64, 22, 60, 16, WHITE);
           }
@@ -440,19 +441,19 @@ void processData() {
         //display.display();
       }
 
-//      File dataFile = SD.open(csvFile, FILE_WRITE);
-//      if (dataFile) {
-//        dataFile.println(dataString);
-//        dataFile.close();
-//        Serial.println(dataString);
-//      }
-//
-//      
-//
-//      else {
-//        Serial.print ("Error opening SD Card File");
-//    
-//      }
+      File dataFile = SD.open(csvFile, FILE_WRITE);
+      if (dataFile) {
+        dataFile.println(dataString);
+        dataFile.close();
+        Serial.println(dataString);
+      }
+
+      
+
+      else {
+        Serial.print ("Error opening SD Card File");
+    
+      }
       
     }
     digitalWrite(led, state);

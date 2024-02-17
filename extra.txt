@@ -1,0 +1,55 @@
+1 10   
+2 11   
+3 Pwr  
+4 Gnd  
+5 12   
+6 13   
+7 A4   
+8 A5   
+
+
+
+const bool narrowbandLambda = false;
+//const int narrowbandThreshold = 100; //mV  // This is for the real version in a car (0.450v switch)
+const int narrowbandThreshold = 512; //mV  // This is for the ECU tester
+
+//////////////////////////////
+// Wideband Lambda Settings //
+//////////////////////////////
+
+// Change these to suit the wideband controller you have, for my NAW 7S, this is 10:1 to 20:1
+// Don't forget to set the nannoebandLambda to false
+const float lambda_0V = 10.00;
+const float lambda_5V = 20.00;
+
+
+if ( page == 4 ) {
+        // its the Lambda on this one
+        display.clearDisplay();
+        display.setTextColor(SSD1306_WHITE);
+        display.setTextSize(2);
+        display.setCursor(0,0);
+        display.println("Lambda");
+        
+        // rich / lean on narrowband
+        if (narrowbandLambda == true) {
+          display.drawFastHLine(0, 15, 128, SSD1306_WHITE);
+          display.drawRect(2, 20, 124, 20, SSD1306_WHITE);  // Outer Box
+          display.drawFastVLine(64, 20, 20, SSD1306_WHITE); // Halfway Marker
+          if ( lambda < narrowbandThreshold ) {
+            //lean
+            display.fillRect(4, 22, 60, 16, SSD1306_WHITE);
+          }
+          else {
+            //rich
+            display.fillRect(64, 22, 60, 16, SSD1306_WHITE);
+          }
+        }
+        else {
+          // Wideband - display the AFR
+          float lambdaAFR = lambda_0V + ( (lambda_5V - lambda_0V) * lambda / 1024);
+          display.setTextSize(3);
+          display.println(lambdaAFR);
+        }
+        display.display();
+      }
